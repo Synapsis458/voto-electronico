@@ -44,3 +44,44 @@ body {
   background: linear-gradient(135deg, #1e3a8a, #0891b2, #1e3a8a);
   padding: 1.5px;
 }
+
+/* Scale up the public results dashboard when the tab is in browser
+   fullscreen (e.g. projected on a screen), so it reads from a distance. */
+:fullscreen .rd-container {
+  max-width: 80rem;
+}
+:fullscreen .rd-title {
+  font-size: 3.25rem !important;
+}
+:fullscreen .rd-subtitle {
+  font-size: 1.25rem !important;
+}
+:fullscreen .rd-badge {
+  font-size: 1.1rem !important;
+  padding: 0.6rem 1.25rem !important;
+}
+:fullscreen .rd-stat-label {
+  font-size: 1.1rem !important;
+}
+:fullscreen .rd-stat-value {
+  font-size: 3rem !important;
+}
+:fullscreen .rd-row-name {
+  font-size: 1.75rem !important;
+}
+:fullscreen .rd-row-agrupacion {
+  font-size: 1.25rem !important;
+}
+:fullscreen .rd-row-total {
+  font-size: 1.75rem !important;
+}
+:fullscreen .rd-row-pct {
+  font-size: 1.1rem !important;
+}
+:fullscreen .rd-photo {
+  height: 4.5rem !important;
+  width: 4.5rem !important;
+}
+:fullscreen .rd-bar {
+  height: 0.75rem !important;
+}
