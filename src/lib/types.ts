@@ -9,6 +9,8 @@ export type Institucion = {
   director: string;
   comite_electoral: string;
   anio_escolar: string;
+  hora_inicio: string | null;
+  hora_fin: string | null;
 };
 
 export type Elector = {

@@ -172,28 +172,27 @@ export default async function ActaElectoralPage({
           </div>
         </div>
 
-        {/* Firmas de la mesa */}
-        <div className="mt-8 grid grid-cols-3 gap-6 text-center text-sm">
+        {/* Firmas de la mesa — misma grilla de 3 columnas que Personeros, para que
+            ambos bloques queden alineados verticalmente en la página. */}
+        <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-10 text-center text-sm sm:grid-cols-3">
           {["Presidente", "Secretario(a)", "Vocal"].map((cargo) => (
-            <div key={cargo}>
-              <p className="mb-8 font-semibold uppercase">{cargo}</p>
+            <div key={cargo} className="flex flex-col">
+              <p className="mb-10 font-semibold uppercase">{cargo}</p>
               <div className="border-t border-zinc-900 pt-1 print:border-black">Nombres y apellidos</div>
-              <p className="mt-4 text-left">
+              <p className="mt-3 text-left">
                 DNI: <span className={linea}>&nbsp;</span>
               </p>
             </div>
           ))}
         </div>
 
-        {/* Personeros — una columna por cada agrupación registrada */}
+        {/* Personeros — una columna por cada agrupación registrada, envolviendo
+            de a 3 por fila para mantener el mismo ancho de columna de arriba. */}
         {r.porCandidato.length > 0 && (
-          <div
-            className="mt-8 grid gap-4 text-center text-xs"
-            style={{ gridTemplateColumns: `repeat(${r.porCandidato.length}, minmax(0, 1fr))` }}
-          >
+          <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-10 text-center text-xs sm:grid-cols-3">
             {r.porCandidato.map((p) => (
-              <div key={p.candidato.id}>
-                <p className="mb-8 font-semibold uppercase">Personero(a)</p>
+              <div key={p.candidato.id} className="flex flex-col">
+                <p className="mb-10 font-semibold uppercase">Personero(a)</p>
                 <div className="border-t border-zinc-900 pt-1 print:border-black">{p.candidato.agrupacion}</div>
               </div>
             ))}

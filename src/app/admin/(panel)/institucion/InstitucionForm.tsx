@@ -86,6 +86,41 @@ export default function InstitucionForm({
         </div>
       </div>
 
+      <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+        <p className={labelClass}>Horario de votación</p>
+        <p className="mb-3 text-xs text-zinc-500">
+          Fuera de este horario, la pantalla principal no permitirá emitir
+          votos. Deja ambos campos vacíos para no aplicar ningún límite de
+          horario.
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass} htmlFor="hora_inicio">
+              Hora de inicio
+            </label>
+            <input
+              id="hora_inicio"
+              name="hora_inicio"
+              type="time"
+              defaultValue={institucion.hora_inicio?.slice(0, 5) ?? ""}
+              className={inputClass}
+            />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="hora_fin">
+              Hora de culminación
+            </label>
+            <input
+              id="hora_fin"
+              name="hora_fin"
+              type="time"
+              defaultValue={institucion.hora_fin?.slice(0, 5) ?? ""}
+              className={inputClass}
+            />
+          </div>
+        </div>
+      </div>
+
       <div>
         <label className={labelClass} htmlFor="director">
           Director

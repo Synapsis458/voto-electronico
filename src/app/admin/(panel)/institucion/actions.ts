@@ -16,6 +16,12 @@ export async function saveInstitucion(
 
   const id = String(formData.get("id") ?? "");
   const fechaProceso = String(formData.get("fecha_proceso") ?? "").trim();
+  const horaInicio = String(formData.get("hora_inicio") ?? "").trim();
+  const horaFin = String(formData.get("hora_fin") ?? "").trim();
+
+  if (horaInicio && horaFin && horaInicio >= horaFin) {
+    return { error: "La hora de inicio debe ser anterior a la hora de culminación." };
+  }
 
   const payload: Record<string, unknown> = {
     nombre: String(formData.get("nombre") ?? "").trim(),
@@ -25,6 +31,8 @@ export async function saveInstitucion(
     comite_electoral: String(formData.get("comite_electoral") ?? "").trim(),
     anio_escolar: String(formData.get("anio_escolar") ?? "").trim(),
     fecha_proceso: fechaProceso || null,
+    hora_inicio: horaInicio || null,
+    hora_fin: horaFin || null,
     updated_at: new Date().toISOString(),
   };
 

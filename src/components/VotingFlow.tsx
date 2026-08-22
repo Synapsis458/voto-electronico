@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
+  Clock,
   FileMinus,
   Keyboard,
   Loader2,
@@ -19,6 +20,8 @@ type Stage =
   | "buscando"
   | "no_registrado"
   | "ya_voto"
+  | "no_iniciado"
+  | "finalizado"
   | "votando"
   | "confirmando"
   | "enviando"
@@ -38,6 +41,7 @@ export default function VotingFlow({
   const [seleccion, setSeleccion] = useState<Candidato | "blanco" | null>(
     null
   );
+  const [horaLimite, setHoraLimite] = useState("");
   const busyRef = useRef(false);
 
   const reset = useCallback(() => {
@@ -52,6 +56,8 @@ export default function VotingFlow({
     if (
       stage === "no_registrado" ||
       stage === "ya_voto" ||
+      stage === "no_iniciado" ||
+      stage === "finalizado" ||
       stage === "error"
     ) {
       const t = setTimeout(reset, AUTO_RETURN_MS);
@@ -81,6 +87,16 @@ export default function VotingFlow({
         setStage("ya_voto");
         return;
       }
+      if (result.status === "no_iniciado") {
+        setHoraLimite(result.horaInicio);
+        setStage("no_iniciado");
+        return;
+      }
+      if (result.status === "finalizado") {
+        setHoraLimite(result.horaFin);
+        setStage("finalizado");
+        return;
+      }
       setStage("no_registrado");
     },
     []
@@ -94,6 +110,12 @@ export default function VotingFlow({
 
     if (result.status === "ok") {
       setStage("gracias");
+    } else if (result.status === "no_iniciado") {
+      setHoraLimite(result.horaInicio);
+      setStage("no_iniciado");
+    } else if (result.status === "finalizado") {
+      setHoraLimite(result.horaFin);
+      setStage("finalizado");
     } else {
       setStage("error");
     }
@@ -129,6 +151,26 @@ export default function VotingFlow({
         tono="advertencia"
         icono={ShieldAlert}
         texto="Su voto ya fue registrado."
+      />
+    );
+  }
+
+  if (stage === "no_iniciado") {
+    return (
+      <MensajeTransitorio
+        tono="advertencia"
+        icono={Clock}
+        texto={`La votación aún no ha iniciado. Empieza a las ${horaLimite}.`}
+      />
+    );
+  }
+
+  if (stage === "finalizado") {
+    return (
+      <MensajeTransitorio
+        tono="advertencia"
+        icono={Clock}
+        texto={`La votación ya ha finalizado (culminó a las ${horaLimite}).`}
       />
     );
   }

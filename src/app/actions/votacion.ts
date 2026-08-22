@@ -1,15 +1,26 @@
 "use server";
 
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { getInstitucion, verificarHorarioVotacion } from "@/lib/institucion";
 import type { Candidato, Elector } from "@/lib/types";
 
 export type BuscarElectorResult =
   | { status: "ok"; elector: Elector }
   | { status: "ya_voto" }
   | { status: "no_registrado" }
-  | { status: "invalido" };
+  | { status: "invalido" }
+  | { status: "no_iniciado"; horaInicio: string }
+  | { status: "finalizado"; horaFin: string };
 
 export async function buscarElector(dni: string): Promise<BuscarElectorResult> {
+  const institucion = await getInstitucion();
+  const horario = verificarHorarioVotacion(institucion);
+  if (!horario.dentro) {
+    return horario.motivo === "no_iniciado"
+      ? { status: "no_iniciado", horaInicio: horario.horaInicio }
+      : { status: "finalizado", horaFin: horario.horaFin };
+  }
+
   const clean = dni.trim();
   if (!/^\d{8}$/.test(clean)) {
     return { status: "invalido" };
@@ -41,12 +52,22 @@ export type EmitirVotoResult =
   | { status: "ok" }
   | { status: "ya_voto" }
   | { status: "no_registrado" }
-  | { status: "error" };
+  | { status: "error" }
+  | { status: "no_iniciado"; horaInicio: string }
+  | { status: "finalizado"; horaFin: string };
 
 export async function emitirVoto(
   dni: string,
   candidatoId: string | null
 ): Promise<EmitirVotoResult> {
+  const institucion = await getInstitucion();
+  const horario = verificarHorarioVotacion(institucion);
+  if (!horario.dentro) {
+    return horario.motivo === "no_iniciado"
+      ? { status: "no_iniciado", horaInicio: horario.horaInicio }
+      : { status: "finalizado", horaFin: horario.horaFin };
+  }
+
   const clean = dni.trim();
   if (!/^\d{8}$/.test(clean)) return { status: "error" };
 

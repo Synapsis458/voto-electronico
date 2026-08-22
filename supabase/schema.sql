@@ -27,10 +27,16 @@ create table if not exists institucion (
   director text not null default '',
   comite_electoral text not null default '',
   anio_escolar text not null default '',
+  hora_inicio time,
+  hora_fin time,
   updated_at timestamptz not null default now()
 );
 
 comment on table institucion is 'Configuración general del proceso electoral. Se espera una sola fila.';
+
+-- Migración para bases ya creadas antes de que existieran estas columnas.
+alter table institucion add column if not exists hora_inicio time;
+alter table institucion add column if not exists hora_fin time;
 
 -- =========================================================
 -- Electores

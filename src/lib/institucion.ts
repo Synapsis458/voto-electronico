@@ -24,3 +24,34 @@ export async function getInstitucion(): Promise<Institucion> {
 
   return created as Institucion;
 }
+
+// Peru doesn't observe DST, so a fixed America/Lima lookup is reliable
+// regardless of the server's own timezone (e.g. UTC on Vercel/Netlify).
+export function horaActualLima(): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/Lima",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date());
+}
+
+export type EstadoHorario =
+  | { dentro: true }
+  | { dentro: false; motivo: "no_iniciado"; horaInicio: string }
+  | { dentro: false; motivo: "finalizado"; horaFin: string };
+
+export function verificarHorarioVotacion(institucion: Institucion): EstadoHorario {
+  const ahora = horaActualLima();
+
+  if (institucion.hora_inicio) {
+    const horaInicio = institucion.hora_inicio.slice(0, 5);
+    if (ahora < horaInicio) return { dentro: false, motivo: "no_iniciado", horaInicio };
+  }
+  if (institucion.hora_fin) {
+    const horaFin = institucion.hora_fin.slice(0, 5);
+    if (ahora > horaFin) return { dentro: false, motivo: "finalizado", horaFin };
+  }
+
+  return { dentro: true };
+}
