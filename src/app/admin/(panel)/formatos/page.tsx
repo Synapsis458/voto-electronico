@@ -15,6 +15,11 @@ const FORMATOS = [
     label: "Acta Electoral",
     desc: "Instalación, sufragio y escrutinio en un solo formato, con resultados y personeros auto-completados.",
   },
+  {
+    href: "/admin/formatos/certificados",
+    label: "Certificados de miembros de mesa",
+    desc: "Uno por cada Presidente/Secretario(a)/Vocal registrado, con su mesa asignada.",
+  },
 ];
 
 export default async function FormatosPage() {
