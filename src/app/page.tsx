@@ -4,6 +4,7 @@ import { BarChart3, Settings, CalendarDays, ShieldCheck } from "lucide-react";
 import { getInstitucion } from "@/lib/institucion";
 import { obtenerCandidatos } from "@/app/actions/votacion";
 import VotingFlow from "@/components/VotingFlow";
+import FullscreenButton from "@/components/FullscreenButton";
 
 const sourceSerif = Source_Serif_4({
   variable: "--font-kiosk-serif",
@@ -116,6 +117,8 @@ export default async function Home() {
           Tu voto es confidencial y seguro
         </p>
       </div>
+
+      <FullscreenButton posicion="right-36 top-4" />
 
       <Link
         href="/resultados"
