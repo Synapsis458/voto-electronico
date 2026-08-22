@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Source_Serif_4, Source_Sans_3 } from "next/font/google";
-import { Settings, CalendarDays, ShieldCheck } from "lucide-react";
+import { BarChart3, Settings, CalendarDays, ShieldCheck } from "lucide-react";
 import { getInstitucion } from "@/lib/institucion";
 import { obtenerCandidatos } from "@/app/actions/votacion";
 import VotingFlow from "@/components/VotingFlow";
@@ -116,6 +116,14 @@ export default async function Home() {
           Tu voto es confidencial y seguro
         </p>
       </div>
+
+      <Link
+        href="/resultados"
+        aria-label="Resultados en vivo"
+        className="fixed right-20 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-600 shadow-lg ring-1 ring-slate-200 transition-colors hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700"
+      >
+        <BarChart3 className="h-5 w-5" />
+      </Link>
 
       <Link
         href="/admin"

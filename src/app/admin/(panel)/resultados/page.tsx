@@ -1,44 +1,17 @@
 import { requireAdmin } from "@/lib/supabase/auth";
-import { supabaseAdmin } from "@/lib/supabase/server";
-import type { Candidato, Voto } from "@/lib/types";
+import { getResultados } from "@/lib/resultados";
 
 export default async function ResultadosPage() {
   await requireAdmin();
-
-  const [{ count: totalElectores }, { count: totalVotantes }, { data: votosData }, { data: candidatosData }] =
-    await Promise.all([
-      supabaseAdmin.from("electores").select("*", { count: "exact", head: true }),
-      supabaseAdmin
-        .from("electores")
-        .select("*", { count: "exact", head: true })
-        .eq("ya_voto", true),
-      supabaseAdmin.from("votos").select("*"),
-      supabaseAdmin.from("candidatos").select("*").order("orden", { ascending: true }),
-    ]);
-
-  const votos = (votosData ?? []) as Voto[];
-  const candidatos = (candidatosData ?? []) as Candidato[];
-
-  const electores = totalElectores ?? 0;
-  const votantes = totalVotantes ?? 0;
-  const abstenciones = Math.max(electores - votantes, 0);
-  const participacion = electores > 0 ? Math.round((votantes / electores) * 1000) / 10 : 0;
-  const votosBlanco = votos.filter((v) => v.tipo_voto === "blanco").length;
-  const votosValidos = votos.length - votosBlanco;
-
-  const conteoPorCandidato = candidatos.map((c) => {
-    const total = votos.filter((v) => v.candidato_id === c.id).length;
-    const porcentaje = votos.length > 0 ? Math.round((total / votos.length) * 1000) / 10 : 0;
-    return { candidato: c, total, porcentaje };
-  });
+  const r = await getResultados();
 
   const stats = [
-    { label: "Total de electores", value: electores },
-    { label: "Total de votantes", value: votantes },
-    { label: "Participación", value: `${participacion}%` },
-    { label: "Abstenciones", value: abstenciones },
-    { label: "Votos válidos", value: votosValidos },
-    { label: "Votos en blanco", value: votosBlanco },
+    { label: "Total de electores", value: r.electores },
+    { label: "Total de votantes", value: r.votantes },
+    { label: "Participación", value: `${r.participacion}%` },
+    { label: "Abstenciones", value: r.abstenciones },
+    { label: "Votos válidos", value: r.votosValidos },
+    { label: "Votos en blanco", value: r.votosBlanco },
   ];
 
   return (
@@ -47,7 +20,11 @@ export default async function ResultadosPage() {
         Resultados
       </h1>
       <p className="mb-6 text-sm text-zinc-500">
-        Datos en tiempo real. Recarga la página para actualizar.
+        Datos en tiempo real.{" "}
+        <a href="/resultados" target="_blank" className="text-blue-600 hover:underline dark:text-blue-400">
+          Ver dashboard público
+        </a>
+        .
       </p>
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -75,7 +52,7 @@ export default async function ResultadosPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {conteoPorCandidato.map(({ candidato, total, porcentaje }) => (
+            {r.porCandidato.map(({ candidato, total, porcentaje }) => (
               <tr key={candidato.id}>
                 <td className="px-4 py-2">
                   {candidato.nombres} {candidato.apellidos}
@@ -88,10 +65,8 @@ export default async function ResultadosPage() {
             <tr>
               <td className="px-4 py-2 font-medium">Voto en blanco</td>
               <td className="px-4 py-2">—</td>
-              <td className="px-4 py-2">{votosBlanco}</td>
-              <td className="px-4 py-2">
-                {votos.length > 0 ? Math.round((votosBlanco / votos.length) * 1000) / 10 : 0}%
-              </td>
+              <td className="px-4 py-2">{r.votosBlanco}</td>
+              <td className="px-4 py-2">{r.porcentajeBlanco}%</td>
             </tr>
           </tbody>
         </table>
