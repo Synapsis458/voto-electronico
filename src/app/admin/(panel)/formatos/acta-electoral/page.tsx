@@ -1,0 +1,205 @@
+import Link from "next/link";
+import { requireAdmin } from "@/lib/supabase/auth";
+import { getInstitucion } from "@/lib/institucion";
+import { getResultados } from "@/lib/resultados";
+import PrintButton from "../../resultados/PrintButton";
+
+const linea = "inline-block min-w-[7rem] border-b border-zinc-900 print:border-black";
+const casilla =
+  "flex h-11 w-24 items-center justify-center border border-zinc-900 text-sm font-semibold print:border-black";
+
+export default async function ActaElectoralPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mesa?: string }>;
+}) {
+  await requireAdmin();
+  const { mesa } = await searchParams;
+  const [institucion, r] = await Promise.all([getInstitucion(), getResultados({ mesa })]);
+
+  const fecha = institucion.fecha_proceso
+    ? new Date(institucion.fecha_proceso).toLocaleDateString("es-PE", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : "____________________";
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <Link href="/admin/formatos" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+          ← Volver a Formatos
+        </Link>
+        <PrintButton />
+      </div>
+
+      <form className="mb-4 flex flex-wrap items-center gap-2 print:hidden" method="get">
+        <label className="text-sm text-zinc-500">Mesa (opcional, deja vacío para todas):</label>
+        <input
+          name="mesa"
+          defaultValue={mesa}
+          placeholder="Mesa"
+          className="w-24 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        />
+        <button className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700">
+          Aplicar
+        </button>
+      </form>
+
+      <div className="rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-900 dark:border-zinc-800 sm:p-8 print:rounded-none print:border-0 print:p-0 print:text-black">
+        {/* Encabezado */}
+        <div className="flex items-start gap-4 border-b-2 border-zinc-900 pb-4 print:border-black">
+          {institucion.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={institucion.logo_url} alt="" className="h-20 w-20 shrink-0 object-contain" />
+          ) : (
+            <div className="h-20 w-20 shrink-0" />
+          )}
+          <div className="flex-1 text-center">
+            <p className="text-xl font-extrabold uppercase leading-tight text-blue-900 print:text-black">
+              {institucion.proceso_electoral || "Proceso Electoral Escolar"}
+            </p>
+            <p className="text-base font-bold uppercase">{institucion.nombre || "Institución Educativa"}</p>
+            <p className="mt-1 text-lg font-black uppercase tracking-wide">Acta Electoral</p>
+          </div>
+          <div className="shrink-0 text-right text-sm font-semibold">
+            Mesa número:
+            <br />
+            <span className={linea}>{mesa || " "}</span>
+          </div>
+        </div>
+
+        {/* Instalación + Sufragio */}
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="overflow-hidden rounded-lg border border-zinc-900 print:border-black">
+            <div className="bg-emerald-600 px-3 py-1.5 text-center text-sm font-bold uppercase text-white print:bg-emerald-700">
+              Instalación
+            </div>
+            <div className="flex items-center justify-between gap-3 p-3 text-sm">
+              <p>
+                La mesa de votación se instala a las <span className={linea}>&nbsp;</span> horas
+                del día <strong>{fecha}</strong>.
+                <br />
+                <br />
+                Cantidad de electores hábiles:
+              </p>
+              <div className={casilla}>{r.electores}</div>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-lg border border-zinc-900 print:border-black">
+            <div className="bg-amber-500 px-3 py-1.5 text-center text-sm font-bold uppercase text-white print:bg-amber-600">
+              Sufragio o Votación
+            </div>
+            <div className="flex items-center justify-between gap-3 p-3 text-sm">
+              <p>
+                El sufragio concluye a las <span className={linea}>&nbsp;</span> horas del día{" "}
+                <strong>{fecha}</strong>.
+                <br />
+                <br />
+                Total de electores que votaron:
+              </p>
+              <div className={casilla}>{r.votantes}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Escrutinio */}
+        <div className="mt-4 overflow-hidden rounded-lg border border-zinc-900 print:border-black">
+          <div className="bg-blue-800 px-3 py-1.5 text-center text-sm font-bold uppercase text-white">
+            Escrutinio o Conteo de Votos
+          </div>
+          <div className="p-4">
+            <p className="mb-3 text-sm">
+              Siendo las <span className={linea}>&nbsp;</span> horas del día{" "}
+              <strong>{fecha}</strong>, se da inicio al escrutinio, obteniéndose los
+              siguientes resultados registrados por el sistema:
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+              <table className="w-full border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-400 print:border-black">
+                    <th className="py-1.5 pr-2">Agrupación / Candidato(a)</th>
+                    <th className="py-1.5 pr-2 text-right">Votos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {r.porCandidato.map((p) => (
+                    <tr key={p.candidato.id} className="border-b border-zinc-200 print:border-black/30">
+                      <td className="py-1.5 pr-2">
+                        <span className="font-semibold">{p.candidato.agrupacion}</span>
+                        <br />
+                        <span className="text-zinc-600 print:text-black">
+                          {p.candidato.nombres} {p.candidato.apellidos}
+                        </span>
+                      </td>
+                      <td className="py-1.5 pr-2 text-right text-base font-bold">{p.total}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-b border-zinc-200 print:border-black/30">
+                    <td className="py-1.5 pr-2 font-semibold">Votos en blanco</td>
+                    <td className="py-1.5 pr-2 text-right text-base font-bold">{r.votosBlanco}</td>
+                  </tr>
+                  <tr className="border-b border-zinc-200 print:border-black/30">
+                    <td className="py-1.5 pr-2 font-semibold">
+                      Votos nulos
+                      <span className="ml-1 text-xs font-normal text-zinc-500">
+                        (no aplica — sistema digital)
+                      </span>
+                    </td>
+                    <td className="py-1.5 pr-2 text-right text-base font-bold">0</td>
+                  </tr>
+                  <tr>
+                    <td className="py-1.5 pr-2 font-bold">Total de votos</td>
+                    <td className="py-1.5 pr-2 text-right text-base font-bold">{r.totalVotos}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="min-w-[14rem] rounded-lg border border-zinc-300 p-3 text-xs print:border-black">
+                <p className="mb-2 font-semibold uppercase">Observaciones</p>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="mt-3 border-b border-dotted border-zinc-400 print:border-black" />
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-2 text-sm">
+              Hora de fin del escrutinio: <div className={casilla}>&nbsp;</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Firmas de la mesa */}
+        <div className="mt-8 grid grid-cols-3 gap-6 text-center text-sm">
+          {["Presidente", "Secretario(a)", "Vocal"].map((cargo) => (
+            <div key={cargo}>
+              <p className="mb-8 font-semibold uppercase">{cargo}</p>
+              <div className="border-t border-zinc-900 pt-1 print:border-black">Nombres y apellidos</div>
+              <p className="mt-4 text-left">
+                DNI: <span className={linea}>&nbsp;</span>
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Personeros — una columna por cada agrupación registrada */}
+        {r.porCandidato.length > 0 && (
+          <div
+            className="mt-8 grid gap-4 text-center text-xs"
+            style={{ gridTemplateColumns: `repeat(${r.porCandidato.length}, minmax(0, 1fr))` }}
+          >
+            {r.porCandidato.map((p) => (
+              <div key={p.candidato.id}>
+                <p className="mb-8 font-semibold uppercase">Personero(a)</p>
+                <div className="border-t border-zinc-900 pt-1 print:border-black">{p.candidato.agrupacion}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

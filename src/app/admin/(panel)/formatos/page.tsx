@@ -11,9 +11,9 @@ const FORMATOS = [
     desc: "Afiche para pegar en lugares visibles, se adapta a la cantidad de candidatos.",
   },
   {
-    href: "/admin/formatos/actas",
-    label: "Actas (instalación, sufragio, escrutinio, final)",
-    desc: "Las cuatro actas listas para imprimir juntas.",
+    href: "/admin/formatos/acta-electoral",
+    label: "Acta Electoral",
+    desc: "Instalación, sufragio y escrutinio en un solo formato, con resultados y personeros auto-completados.",
   },
 ];
 
