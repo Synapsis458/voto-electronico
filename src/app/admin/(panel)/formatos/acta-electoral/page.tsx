@@ -27,10 +27,22 @@ export default async function ActaElectoralPage({
   const miembros = (miembrosData ?? []) as MiembroMesa[];
 
   function resolverMiembro(cargo: CargoMesa): MiembroMesa | undefined {
-    return (
-      miembros.find((m) => m.cargo === cargo && m.mesa === (mesa ?? "")) ??
-      miembros.find((m) => m.cargo === cargo && m.mesa === "")
-    );
+    const candidatos = miembros.filter((m) => m.cargo === cargo);
+
+    if (mesa) {
+      // Se pidió una mesa concreta: esa mesa, o el registro genérico
+      // (mesa en blanco) si no hay uno específico para ella.
+      return candidatos.find((m) => m.mesa === mesa) ?? candidatos.find((m) => m.mesa === "");
+    }
+
+    // Sin filtro de mesa (vista de "todas"): si todo lo registrado para
+    // este cargo es de una sola mesa —el caso típico de un colegio con
+    // una única mesa— se usa ese registro sin necesidad de filtrar por
+    // mesa explícitamente. Si hay más de una mesa distinta, se deja en
+    // blanco para no atribuir el cargo de la mesa equivocada.
+    const mesasDistintas = new Set(candidatos.map((m) => m.mesa));
+    if (mesasDistintas.size === 1) return candidatos[0];
+    return candidatos.find((m) => m.mesa === "");
   }
 
   const fecha = institucion.fecha_proceso
