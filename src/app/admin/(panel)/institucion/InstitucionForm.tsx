@@ -135,8 +135,14 @@ export default function InstitucionForm({
 
       <div>
         <label className={labelClass} htmlFor="comite_electoral">
-          Comité Electoral
+          Comité Electoral (supervisión general)
         </label>
+        <p className="mb-1 text-xs text-zinc-500">
+          Docentes o responsables que supervisan todo el proceso electoral.
+          Distinto de los encargados de cada mesa de votación (Presidente,
+          Secretario, Vocal) — esos se registran más abajo, en
+          &ldquo;Miembros de mesa&rdquo;.
+        </p>
         <textarea
           id="comite_electoral"
           name="comite_electoral"
