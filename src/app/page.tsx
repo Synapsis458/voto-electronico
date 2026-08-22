@@ -120,7 +120,7 @@ export default async function Home() {
       <Link
         href="/admin"
         aria-label="Configuración"
-        className="fixed bottom-4 right-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-600 shadow-lg ring-1 ring-slate-200 transition-colors hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700"
+        className="fixed right-4 top-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-600 shadow-lg ring-1 ring-slate-200 transition-colors hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700"
       >
         <Settings className="h-5 w-5" />
       </Link>
