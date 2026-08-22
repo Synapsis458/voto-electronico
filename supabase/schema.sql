@@ -93,9 +93,23 @@ create index if not exists votos_candidato_id_idx on votos (candidato_id);
 create index if not exists votos_mesa_idx on votos (mesa);
 
 -- =========================================================
+-- Auditoría (registro de acciones del panel admin)
+-- =========================================================
+create table if not exists auditoria (
+  id uuid primary key default gen_random_uuid(),
+  admin_email text not null,
+  accion text not null,
+  detalle text not null default '',
+  created_at timestamptz not null default now()
+);
+
+create index if not exists auditoria_created_at_idx on auditoria (created_at desc);
+
+-- =========================================================
 -- RLS: activado, sin políticas públicas (solo service role).
 -- =========================================================
 alter table institucion enable row level security;
 alter table electores enable row level security;
 alter table candidatos enable row level security;
 alter table votos enable row level security;
+alter table auditoria enable row level security;

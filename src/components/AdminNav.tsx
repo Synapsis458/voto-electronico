@@ -11,6 +11,7 @@ const TABS = [
   { href: "/admin/carnets", label: "Carnets" },
   { href: "/admin/resultados", label: "Resultados" },
   { href: "/admin/formatos", label: "Formatos" },
+  { href: "/admin/auditoria", label: "Auditoría" },
 ] as const;
 
 export default function AdminNav() {

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { optionalFile, uploadImage } from "@/lib/storage";
+import { logAudit } from "@/lib/audit";
 
 export type InstitucionState = { error?: string; success?: boolean } | undefined;
 
@@ -11,7 +12,7 @@ export async function saveInstitucion(
   _prevState: InstitucionState,
   formData: FormData
 ): Promise<InstitucionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const id = String(formData.get("id") ?? "");
   const fechaProceso = String(formData.get("fecha_proceso") ?? "").trim();
@@ -46,6 +47,7 @@ export async function saveInstitucion(
     return { error: "No se pudo guardar la información." };
   }
 
+  await logAudit(admin.email ?? "admin", "Actualizó datos de la institución");
   revalidatePath("/admin/institucion");
   revalidatePath("/");
   return { success: true };

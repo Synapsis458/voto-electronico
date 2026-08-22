@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createAuthClient } from "@/lib/supabase/auth";
+import { logAudit } from "@/lib/audit";
 
 export type LoginState = { error?: string } | undefined;
 
@@ -26,11 +27,16 @@ export async function login(
     return { error: "Credenciales incorrectas." };
   }
 
+  await logAudit(email, "Inició sesión");
   redirect("/admin");
 }
 
 export async function logout() {
   const supabase = await createAuthClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   await supabase.auth.signOut();
+  if (user?.email) await logAudit(user.email, "Cerró sesión");
   redirect("/");
 }

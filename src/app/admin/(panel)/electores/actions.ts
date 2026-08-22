@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import * as XLSX from "xlsx";
 import { requireAdmin } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit";
 
 export type ElectorState = { error?: string; success?: boolean } | undefined;
 
@@ -11,7 +12,7 @@ export async function createElector(
   _prevState: ElectorState,
   formData: FormData
 ): Promise<ElectorState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const dni = String(formData.get("dni") ?? "").trim();
   if (!/^\d{8}$/.test(dni)) {
@@ -33,14 +34,23 @@ export async function createElector(
     };
   }
 
+  await logAudit(admin.email ?? "admin", "Registró elector", `DNI ${dni}`);
   revalidatePath("/admin/electores");
   return { success: true };
 }
 
 export async function deleteElector(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get("id") ?? "");
+
+  const { data: elector } = await supabaseAdmin
+    .from("electores")
+    .select("dni")
+    .eq("id", id)
+    .maybeSingle();
+
   await supabaseAdmin.from("electores").delete().eq("id", id);
+  await logAudit(admin.email ?? "admin", "Eliminó elector", elector ? `DNI ${elector.dni}` : `id ${id}`);
   revalidatePath("/admin/electores");
 }
 
@@ -51,7 +61,7 @@ export async function deleteElector(formData: FormData) {
 // - Pendiente -> Ya votó: flags the elector as voted without a vote record
 //   (e.g. voted on a paper backup, or excluded), so the kiosk turns them away.
 export async function toggleVotoElector(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const { data: elector } = await supabaseAdmin
     .from("electores")
@@ -67,11 +77,21 @@ export async function toggleVotoElector(id: string) {
       .from("electores")
       .update({ ya_voto: false, voto_at: null })
       .eq("id", id);
+    await logAudit(
+      admin.email ?? "admin",
+      "Restableció voto a Pendiente",
+      `DNI ${elector.dni} — se eliminó su voto registrado`
+    );
   } else {
     await supabaseAdmin
       .from("electores")
       .update({ ya_voto: true, voto_at: new Date().toISOString() })
       .eq("id", id);
+    await logAudit(
+      admin.email ?? "admin",
+      "Marcó como Ya votó (manual)",
+      `DNI ${elector.dni} — sin registrar candidato`
+    );
   }
 
   revalidatePath("/admin/electores");
@@ -117,7 +137,7 @@ export async function importElectores(
   _prevState: ImportState,
   formData: FormData
 ): Promise<ImportState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const file = formData.get("archivo");
   if (!(file instanceof File) || file.size === 0) {
@@ -177,6 +197,11 @@ export async function importElectores(
     }
   }
 
+  await logAudit(
+    admin.email ?? "admin",
+    "Importó electores desde Excel",
+    `${validos.length} de ${rows.length} filas`
+  );
   revalidatePath("/admin/electores");
 
   return {

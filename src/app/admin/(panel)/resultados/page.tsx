@@ -1,9 +1,17 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/supabase/auth";
 import { getResultados } from "@/lib/resultados";
+import { BarChart, DonutChart } from "./Charts";
+import PrintButton from "./PrintButton";
 
-export default async function ResultadosPage() {
+export default async function ResultadosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ grado?: string; seccion?: string; mesa?: string }>;
+}) {
   await requireAdmin();
-  const r = await getResultados();
+  const { grado, seccion, mesa } = await searchParams;
+  const r = await getResultados({ grado, seccion, mesa });
 
   const stats = [
     { label: "Total de electores", value: r.electores },
@@ -14,18 +22,88 @@ export default async function ResultadosPage() {
     { label: "Votos en blanco", value: r.votosBlanco },
   ];
 
+  const segmentos = [
+    ...r.porCandidato.map((p) => ({
+      label: `${p.candidato.nombres} ${p.candidato.apellidos}`,
+      total: p.total,
+      porcentaje: p.porcentaje,
+    })),
+    { label: "Voto en blanco", total: r.votosBlanco, porcentaje: r.porcentajeBlanco },
+  ];
+
+  const exportParams = new URLSearchParams();
+  if (grado) exportParams.set("grado", grado);
+  if (seccion) exportParams.set("seccion", seccion);
+  if (mesa) exportParams.set("mesa", mesa);
+  const exportHref = `/admin/resultados/export${exportParams.size ? `?${exportParams}` : ""}`;
+
   return (
     <div>
-      <h1 className="mb-1 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-        Resultados
-      </h1>
-      <p className="mb-6 text-sm text-zinc-500">
-        Datos en tiempo real.{" "}
-        <a href="/resultados" target="_blank" className="text-blue-600 hover:underline dark:text-blue-400">
-          Ver dashboard público
-        </a>
-        .
-      </p>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3 print:hidden">
+        <div>
+          <h1 className="mb-1 text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+            Resultados
+          </h1>
+          <p className="text-sm text-zinc-500">
+            Datos en tiempo real.{" "}
+            <a href="/resultados" target="_blank" className="text-blue-600 hover:underline dark:text-blue-400">
+              Ver dashboard público
+            </a>
+            .
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <a
+            href={exportHref}
+            className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:border-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-100"
+          >
+            Exportar a Excel
+          </a>
+          <PrintButton />
+        </div>
+      </div>
+
+      <form className="mb-6 flex flex-wrap gap-2 print:hidden" method="get">
+        <input
+          name="grado"
+          defaultValue={grado}
+          placeholder="Grado"
+          className="w-28 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        />
+        <input
+          name="seccion"
+          defaultValue={seccion}
+          placeholder="Sección"
+          className="w-28 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        />
+        <input
+          name="mesa"
+          defaultValue={mesa}
+          placeholder="Mesa"
+          className="w-28 rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+        />
+        <button className="rounded-lg border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700">
+          Filtrar
+        </button>
+        {(grado || seccion || mesa) && (
+          <Link
+            href="/admin/resultados"
+            className="rounded-lg px-3 py-1.5 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            Limpiar
+          </Link>
+        )}
+      </form>
+
+      {(grado || seccion || mesa) && (
+        <p className="mb-4 text-xs text-zinc-500">
+          Filtrando por{" "}
+          {[grado && `grado ${grado}`, seccion && `sección ${seccion}`, mesa && `mesa ${mesa}`]
+            .filter(Boolean)
+            .join(", ")}
+          .
+        </p>
+      )}
 
       <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {stats.map((s) => (
@@ -39,6 +117,30 @@ export default async function ResultadosPage() {
             </p>
           </div>
         ))}
+      </div>
+
+      <div className="mb-8 grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+          <h2 className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            Votos por candidato
+          </h2>
+          <BarChart datos={segmentos} />
+        </div>
+        <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950">
+          <h2 className="mb-4 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+            Participación
+          </h2>
+          <DonutChart
+            datos={[
+              { label: "Votaron", total: r.votantes, porcentaje: r.participacion },
+              {
+                label: "Abstenciones",
+                total: r.abstenciones,
+                porcentaje: Math.round((1 - r.participacion / 100) * 1000) / 10,
+              },
+            ]}
+          />
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-zinc-200 dark:border-zinc-800">
@@ -71,11 +173,6 @@ export default async function ResultadosPage() {
           </tbody>
         </table>
       </div>
-
-      <p className="mt-4 text-xs text-zinc-500">
-        Filtros por grado/sección/mesa, gráficos e impresión/exportación se
-        agregarán en una siguiente iteración.
-      </p>
     </div>
   );
 }

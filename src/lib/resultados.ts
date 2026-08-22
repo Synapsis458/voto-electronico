@@ -19,23 +19,38 @@ export type Resultados = {
   porcentajeBlanco: number;
 };
 
-export async function getResultados(): Promise<Resultados> {
-  const [{ count: totalElectores }, { count: totalVotantes }, { data: votosData }, { data: candidatosData }] =
-    await Promise.all([
-      supabaseAdmin.from("electores").select("*", { count: "exact", head: true }),
-      supabaseAdmin
-        .from("electores")
-        .select("*", { count: "exact", head: true })
-        .eq("ya_voto", true),
-      supabaseAdmin.from("votos").select("*"),
-      supabaseAdmin.from("candidatos").select("*").order("orden", { ascending: true }),
-    ]);
+export type ResultadosFiltro = {
+  grado?: string;
+  seccion?: string;
+  mesa?: string;
+};
+
+export async function getResultados(filtro: ResultadosFiltro = {}): Promise<Resultados> {
+  const { grado, seccion, mesa } = filtro;
+  const hayFiltro = Boolean(grado || seccion || mesa);
+
+  let electoresQuery = supabaseAdmin.from("electores").select("dni, ya_voto");
+  if (grado) electoresQuery = electoresQuery.eq("grado", grado);
+  if (seccion) electoresQuery = electoresQuery.eq("seccion", seccion);
+  if (mesa) electoresQuery = electoresQuery.eq("mesa", mesa);
+
+  const [{ data: electoresData }, { data: candidatosData }] = await Promise.all([
+    electoresQuery,
+    supabaseAdmin.from("candidatos").select("*").order("orden", { ascending: true }),
+  ]);
+
+  const electoresFiltrados = electoresData ?? [];
+  const dnisFiltrados = electoresFiltrados.map((e) => e.dni);
+
+  let votosQuery = supabaseAdmin.from("votos").select("*");
+  if (hayFiltro) votosQuery = votosQuery.in("elector_dni", dnisFiltrados.length > 0 ? dnisFiltrados : [""]);
+  const { data: votosData } = await votosQuery;
 
   const votos = (votosData ?? []) as Voto[];
   const candidatos = (candidatosData ?? []) as Candidato[];
 
-  const electores = totalElectores ?? 0;
-  const votantes = totalVotantes ?? 0;
+  const electores = electoresFiltrados.length;
+  const votantes = electoresFiltrados.filter((e) => e.ya_voto).length;
   const abstenciones = Math.max(electores - votantes, 0);
   const participacion = electores > 0 ? Math.round((votantes / electores) * 1000) / 10 : 0;
   const votosBlanco = votos.filter((v) => v.tipo_voto === "blanco").length;
