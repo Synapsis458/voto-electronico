@@ -38,6 +38,18 @@ export type Candidato = {
   created_at: string;
 };
 
+export type CargoMesa = "Presidente" | "Secretario(a)" | "Vocal";
+
+export type MiembroMesa = {
+  id: string;
+  mesa: string;
+  cargo: CargoMesa;
+  apellidos: string;
+  nombres: string;
+  dni: string;
+  created_at: string;
+};
+
 export type TipoVoto = "candidato" | "blanco";
 
 export type Voto = {

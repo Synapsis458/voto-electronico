@@ -60,3 +60,68 @@ export async function saveInstitucion(
   revalidatePath("/");
   return { success: true };
 }
+
+export type MiembroMesaState = { error?: string; success?: boolean } | undefined;
+
+export async function guardarMiembroMesa(
+  _prevState: MiembroMesaState,
+  formData: FormData
+): Promise<MiembroMesaState> {
+  const admin = await requireAdmin();
+
+  const mesa = String(formData.get("mesa") ?? "").trim();
+  const cargo = String(formData.get("cargo") ?? "").trim();
+  const apellidos = String(formData.get("apellidos") ?? "").trim();
+  const nombres = String(formData.get("nombres") ?? "").trim();
+  const dni = String(formData.get("dni") ?? "").trim();
+
+  if (!["Presidente", "Secretario(a)", "Vocal"].includes(cargo)) {
+    return { error: "Selecciona un cargo válido." };
+  }
+  if (!apellidos || !nombres) {
+    return { error: "Apellidos y nombres son obligatorios." };
+  }
+  if (dni && !/^\d{8}$/.test(dni)) {
+    return { error: "El DNI debe tener 8 dígitos (o dejarse vacío)." };
+  }
+
+  const { error } = await supabaseAdmin
+    .from("miembros_mesa")
+    .upsert({ mesa, cargo, apellidos, nombres, dni }, { onConflict: "mesa,cargo" });
+
+  if (error) {
+    return { error: "No se pudo guardar el miembro de mesa." };
+  }
+
+  await logAudit(
+    admin.email ?? "admin",
+    "Registró miembro de mesa",
+    `${cargo}${mesa ? ` (mesa ${mesa})` : ""}: ${nombres} ${apellidos}`
+  );
+  revalidatePath("/admin/institucion");
+  revalidatePath("/admin/formatos/acta-electoral");
+  return { success: true };
+}
+
+export async function eliminarMiembroMesa(formData: FormData) {
+  const admin = await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+
+  const { data: miembro } = await supabaseAdmin
+    .from("miembros_mesa")
+    .select("cargo, mesa, nombres, apellidos")
+    .eq("id", id)
+    .maybeSingle();
+
+  await supabaseAdmin.from("miembros_mesa").delete().eq("id", id);
+
+  if (miembro) {
+    await logAudit(
+      admin.email ?? "admin",
+      "Eliminó miembro de mesa",
+      `${miembro.cargo}${miembro.mesa ? ` (mesa ${miembro.mesa})` : ""}: ${miembro.nombres} ${miembro.apellidos}`
+    );
+  }
+  revalidatePath("/admin/institucion");
+  revalidatePath("/admin/formatos/acta-electoral");
+}

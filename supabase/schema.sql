@@ -112,6 +112,22 @@ create table if not exists auditoria (
 create index if not exists auditoria_created_at_idx on auditoria (created_at desc);
 
 -- =========================================================
+-- Miembros de mesa (Presidente, Secretario, Vocal) — se incorporan
+-- automáticamente en el Acta Electoral. `mesa` en blanco significa
+-- "aplica a todas las mesas" (colegios con una sola mesa).
+-- =========================================================
+create table if not exists miembros_mesa (
+  id uuid primary key default gen_random_uuid(),
+  mesa text not null default '',
+  cargo text not null check (cargo in ('Presidente', 'Secretario(a)', 'Vocal')),
+  apellidos text not null,
+  nombres text not null,
+  dni text not null default '' check (dni = '' or dni ~ '^[0-9]{8}$'),
+  created_at timestamptz not null default now(),
+  unique (mesa, cargo)
+);
+
+-- =========================================================
 -- RLS: activado, sin políticas públicas (solo service role).
 -- =========================================================
 alter table institucion enable row level security;
@@ -119,3 +135,4 @@ alter table electores enable row level security;
 alter table candidatos enable row level security;
 alter table votos enable row level security;
 alter table auditoria enable row level security;
+alter table miembros_mesa enable row level security;
