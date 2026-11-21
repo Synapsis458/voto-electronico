@@ -55,3 +55,15 @@ export function verificarHorarioVotacion(institucion: Institucion): EstadoHorari
 
   return { dentro: true };
 }
+
+// `fecha_proceso` is a plain calendar date (YYYY-MM-DD) with no time zone.
+// `new Date("2026-11-25")` parses it as UTC midnight, which shows up as the
+// previous day in any zone west of UTC (e.g. Lima), so format it as UTC.
+export function formatearFechaProceso(fecha: string): string {
+  return new Date(fecha).toLocaleDateString("es-PE", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}

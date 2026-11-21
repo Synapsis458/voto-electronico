@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Source_Serif_4, Source_Sans_3 } from "next/font/google";
 import { BarChart3, Settings, CalendarDays, ShieldCheck } from "lucide-react";
-import { getInstitucion } from "@/lib/institucion";
+import { getInstitucion, formatearFechaProceso } from "@/lib/institucion";
 import { obtenerCandidatos } from "@/app/actions/votacion";
 import VotingFlow from "@/components/VotingFlow";
 import FullscreenButton from "@/components/FullscreenButton";
@@ -25,11 +25,7 @@ export default async function Home() {
   ]);
 
   const fechaFormateada = institucion.fecha_proceso
-    ? new Date(institucion.fecha_proceso).toLocaleDateString("es-PE", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+    ? formatearFechaProceso(institucion.fecha_proceso)
     : null;
 
   return (

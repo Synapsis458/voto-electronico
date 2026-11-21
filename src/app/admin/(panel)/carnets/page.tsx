@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 import { requireAdmin } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getInstitucion } from "@/lib/institucion";
+import { getInstitucion, formatearFechaProceso } from "@/lib/institucion";
 import type { Elector } from "@/lib/types";
 import Carnet from "./Carnet";
 
@@ -28,11 +28,7 @@ export default async function CarnetsPage({
   const electores = (data ?? []) as Elector[];
 
   const fechaProceso = institucion.fecha_proceso
-    ? new Date(institucion.fecha_proceso).toLocaleDateString("es-PE", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+    ? formatearFechaProceso(institucion.fecha_proceso)
     : institucion.proceso_electoral;
 
   const carnets = await Promise.all(

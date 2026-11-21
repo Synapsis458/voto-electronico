@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getInstitucion } from "@/lib/institucion";
+import { getInstitucion, formatearFechaProceso } from "@/lib/institucion";
 import { getResultados } from "@/lib/resultados";
 import type { CargoMesa, MiembroMesa } from "@/lib/types";
 import PrintButton from "../../resultados/PrintButton";
@@ -46,11 +46,7 @@ export default async function ActaElectoralPage({
   }
 
   const fecha = institucion.fecha_proceso
-    ? new Date(institucion.fecha_proceso).toLocaleDateString("es-PE", {
-        day: "2-digit",
-        month: "long",
-        year: "numeric",
-      })
+    ? formatearFechaProceso(institucion.fecha_proceso)
     : "____________________";
 
   return (
