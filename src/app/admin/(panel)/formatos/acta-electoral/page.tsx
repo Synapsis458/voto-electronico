@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { getInstitucion, formatearFechaProceso } from "@/lib/institucion";
+import { getInstitucion, formatearFechaProceso, formatearHora } from "@/lib/institucion";
 import { getResultados } from "@/lib/resultados";
 import type { CargoMesa, MiembroMesa } from "@/lib/types";
 import PrintButton from "../../resultados/PrintButton";
@@ -48,6 +48,13 @@ export default async function ActaElectoralPage({
   const fecha = institucion.fecha_proceso
     ? formatearFechaProceso(institucion.fecha_proceso)
     : "____________________";
+
+  // Horario configurado en Institución: instalación = hora de inicio de la
+  // votación; el sufragio concluye (y empieza el escrutinio) a la hora de cierre.
+  const horaInicio = formatearHora(institucion.hora_inicio);
+  const horaFin = formatearHora(institucion.hora_fin);
+  const horaTexto = (hora: string | null) =>
+    hora ? <strong>{hora}</strong> : <span className={linea}>&nbsp;</span>;
 
   return (
     <div>
@@ -102,8 +109,8 @@ export default async function ActaElectoralPage({
             </div>
             <div className="flex items-center justify-between gap-3 p-3 text-sm">
               <p>
-                La mesa de votación se instala a las <span className={linea}>&nbsp;</span> horas
-                del día <strong>{fecha}</strong>.
+                La mesa de votación se instala a las {horaTexto(horaInicio)} del día{" "}
+                <strong>{fecha}</strong>.
                 <br />
                 <br />
                 Cantidad de electores hábiles:
@@ -118,7 +125,7 @@ export default async function ActaElectoralPage({
             </div>
             <div className="flex items-center justify-between gap-3 p-3 text-sm">
               <p>
-                El sufragio concluye a las <span className={linea}>&nbsp;</span> horas del día{" "}
+                El sufragio concluye a las {horaTexto(horaFin)} del día{" "}
                 <strong>{fecha}</strong>.
                 <br />
                 <br />
@@ -136,7 +143,7 @@ export default async function ActaElectoralPage({
           </div>
           <div className="p-4">
             <p className="mb-3 text-sm">
-              Siendo las <span className={linea}>&nbsp;</span> horas del día{" "}
+              Siendo las {horaTexto(horaFin)} del día{" "}
               <strong>{fecha}</strong>, se da inicio al escrutinio, obteniéndose los
               siguientes resultados registrados por el sistema:
             </p>

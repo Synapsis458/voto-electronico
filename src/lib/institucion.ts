@@ -67,3 +67,14 @@ export function formatearFechaProceso(fecha: string): string {
     timeZone: "UTC",
   });
 }
+
+// "15:00" / "15:00:00" -> "3:00 p. m." (12-hour clock, Spanish style).
+export function formatearHora(hora: string | null | undefined): string | null {
+  if (!hora) return null;
+  const m = /^(\d{1,2}):(\d{2})/.exec(hora);
+  if (!m) return null;
+  const h24 = Number(m[1]);
+  const sufijo = h24 >= 12 ? "p. m." : "a. m.";
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  return `${h12}:${m[2]} ${sufijo}`;
+}
