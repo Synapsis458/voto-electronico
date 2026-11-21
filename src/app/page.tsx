@@ -118,6 +118,10 @@ export default async function Home() {
         </p>
       </div>
 
+      <p className="pointer-events-none fixed bottom-2 right-4 z-10 select-none text-[10px] font-medium tracking-wide text-slate-400 dark:text-slate-500">
+        © M. CAHUANA
+      </p>
+
       <FullscreenButton posicion="right-36 top-4" />
 
       <Link
