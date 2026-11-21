@@ -8,6 +8,45 @@ import { logAudit } from "@/lib/audit";
 
 export type CandidatoState = { error?: string; success?: boolean } | undefined;
 
+export type ElectorOpcion = {
+  dni: string;
+  apellidos: string;
+  nombres: string;
+  grado: string;
+  seccion: string;
+  yaEsCandidato: boolean;
+};
+
+// Search the electores table so a candidate can be picked from it.
+export async function buscarElectoresParaCandidato(q: string): Promise<ElectorOpcion[]> {
+  await requireAdmin();
+
+  // Strip characters that would break the PostgREST `or` filter syntax.
+  const termino = q.replace(/[,()%*\\]/g, " ").trim();
+  if (termino.length < 2) return [];
+
+  const { data } = await supabaseAdmin
+    .from("electores")
+    .select("dni,apellidos,nombres,grado,seccion")
+    .or(`dni.ilike.%${termino}%,apellidos.ilike.%${termino}%,nombres.ilike.%${termino}%`)
+    .order("apellidos", { ascending: true })
+    .limit(8);
+
+  const electores = data ?? [];
+  if (electores.length === 0) return [];
+
+  const { data: yaCandidatos } = await supabaseAdmin
+    .from("candidatos")
+    .select("dni")
+    .in(
+      "dni",
+      electores.map((e) => e.dni)
+    );
+  const ocupados = new Set((yaCandidatos ?? []).map((c) => c.dni));
+
+  return electores.map((e) => ({ ...e, yaEsCandidato: ocupados.has(e.dni) }));
+}
+
 export async function createCandidato(
   _prevState: CandidatoState,
   formData: FormData
@@ -16,7 +55,21 @@ export async function createCandidato(
 
   const dni = String(formData.get("dni") ?? "").trim();
   if (!/^\d{8}$/.test(dni)) {
-    return { error: "El DNI debe tener 8 dígitos." };
+    return { error: "Selecciona un elector de la lista para registrarlo como candidato." };
+  }
+
+  // The candidate MUST exist in the electores database; names come from there,
+  // never from the submitted form.
+  const { data: elector } = await supabaseAdmin
+    .from("electores")
+    .select("apellidos,nombres")
+    .eq("dni", dni)
+    .maybeSingle();
+  if (!elector) {
+    return {
+      error:
+        "Ese DNI no está en la base de electores. Regístralo primero en la pestaña Electores.",
+    };
   }
 
   const fotografia = optionalFile(formData, "fotografia");
@@ -33,8 +86,8 @@ export async function createCandidato(
 
   const { error } = await supabaseAdmin.from("candidatos").insert({
     dni,
-    apellidos: String(formData.get("apellidos") ?? "").trim(),
-    nombres: String(formData.get("nombres") ?? "").trim(),
+    apellidos: elector.apellidos,
+    nombres: elector.nombres,
     agrupacion: String(formData.get("agrupacion") ?? "").trim(),
     fotografia_url: fotografiaUrl,
     simbolo_url: simboloUrl,
@@ -60,18 +113,21 @@ export async function updateCandidato(
   const admin = await requireAdmin();
 
   const id = String(formData.get("id") ?? "");
-  const dni = String(formData.get("dni") ?? "").trim();
-  if (!/^\d{8}$/.test(dni)) {
-    return { error: "El DNI debe tener 8 dígitos." };
-  }
+
+  // Identity (DNI + names) comes from the electores database and is not editable
+  // here: only agrupación, order and images can change.
+  const { data: actual } = await supabaseAdmin
+    .from("candidatos")
+    .select("dni")
+    .eq("id", id)
+    .maybeSingle();
+  if (!actual) return { error: "No se encontró el candidato." };
+  const dni = actual.dni as string;
 
   const fotografia = optionalFile(formData, "fotografia");
   const simbolo = optionalFile(formData, "simbolo");
 
   const payload: Record<string, unknown> = {
-    dni,
-    apellidos: String(formData.get("apellidos") ?? "").trim(),
-    nombres: String(formData.get("nombres") ?? "").trim(),
     agrupacion: String(formData.get("agrupacion") ?? "").trim(),
     orden: Number(formData.get("orden") ?? 0) || 0,
   };

@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { createCandidato, updateCandidato } from "./actions";
+import ElectorPicker from "./ElectorPicker";
 import type { Candidato } from "@/lib/types";
 
 const inputClass =
@@ -15,6 +16,14 @@ export default function CandidatoForm({ candidato }: { candidato?: Candidato }) 
   );
   const formRef = useRef<HTMLFormElement>(null);
 
+  // After a successful create, clear the elector picker (remount it) and the form.
+  const [visto, setVisto] = useState(state);
+  const [resetKey, setResetKey] = useState(0);
+  if (state !== visto) {
+    setVisto(state);
+    if (state?.success && !candidato) setResetKey((k) => k + 1);
+  }
+
   useEffect(() => {
     if (state?.success && !candidato) formRef.current?.reset();
   }, [state, candidato]);
@@ -25,29 +34,21 @@ export default function CandidatoForm({ candidato }: { candidato?: Candidato }) 
       action={action}
       className="mb-6 grid grid-cols-2 gap-3 rounded-2xl border border-zinc-200 bg-white p-4 sm:grid-cols-4 dark:border-zinc-800 dark:bg-zinc-950"
     >
-      {candidato && <input type="hidden" name="id" value={candidato.id} />}
-      <input
-        name="dni"
-        placeholder="DNI (8 dígitos)"
-        required
-        maxLength={8}
-        defaultValue={candidato?.dni}
-        className={inputClass}
-      />
-      <input
-        name="apellidos"
-        placeholder="Apellidos"
-        required
-        defaultValue={candidato?.apellidos}
-        className={inputClass}
-      />
-      <input
-        name="nombres"
-        placeholder="Nombres"
-        required
-        defaultValue={candidato?.nombres}
-        className={inputClass}
-      />
+      {candidato ? (
+        <>
+          <input type="hidden" name="id" value={candidato.id} />
+          <div className="col-span-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-800 dark:bg-zinc-900">
+            <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+              {candidato.apellidos}, {candidato.nombres}
+            </p>
+            <p className="text-xs text-zinc-500">
+              DNI {candidato.dni} · Datos tomados de la base de electores (no editables aquí)
+            </p>
+          </div>
+        </>
+      ) : (
+        <ElectorPicker key={resetKey} />
+      )}
       <input
         name="agrupacion"
         placeholder="Agrupación política"

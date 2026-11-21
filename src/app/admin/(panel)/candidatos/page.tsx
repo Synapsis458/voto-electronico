@@ -28,7 +28,9 @@ export default async function CandidatosPage({
         Candidatos
       </h1>
       <p className="mb-6 text-sm text-zinc-500">
-        No hay límite en la cantidad de candidatos que pueden participar.
+        No hay límite en la cantidad de candidatos que pueden participar. Todo
+        candidato debe estar registrado antes en la base de electores: se
+        busca y se selecciona desde allí.
       </p>
 
       <CandidatoForm />
