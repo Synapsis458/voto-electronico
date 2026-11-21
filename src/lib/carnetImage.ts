@@ -32,6 +32,52 @@ function estimateWidth(text: string, fontSize: number): number {
   return text.length * fontSize * 0.55;
 }
 
+type TextoAjustado = { lines: string[]; fontSize: number; overflow: boolean };
+
+// Fit `text` into `maxWidth` x `maxLines`: use the largest font size (in card
+// units, between `maxSize` and `minSize`) at which the wrapped text fits.
+// `charFactor` is the average glyph width in ems — kept conservative so the
+// text still fits if the server falls back to a wider font than Helvetica/Arial.
+function fitText(
+  text: string,
+  maxWidth: number,
+  maxLines: number,
+  maxSize: number,
+  minSize: number,
+  charFactor: number
+): TextoAjustado {
+  const words = text.split(/\s+/).filter(Boolean);
+
+  const wrap = (size: number): string[] => {
+    const px = size * SCALE;
+    const lines: string[] = [];
+    let current = "";
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (candidate.length * px * charFactor > maxWidth && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) lines.push(current);
+    return lines;
+  };
+
+  for (let size = maxSize; size >= minSize; size -= 0.25) {
+    const lines = wrap(size);
+    const fits =
+      lines.length <= maxLines &&
+      lines.every((l) => l.length * size * SCALE * charFactor <= maxWidth);
+    if (fits) return { lines, fontSize: size, overflow: false };
+  }
+
+  // Even the smallest size does not fit: keep the first lines, mark overflow so
+  // the renderer squeezes each line to the available width instead of cutting it.
+  return { lines: wrap(minSize).slice(0, maxLines), fontSize: minSize, overflow: true };
+}
+
 function wrapText(text: string, fontSize: number, maxWidth: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
@@ -81,12 +127,66 @@ export async function generateCarnetJpg(
   const qrPng = await generateQrPng(elector.dni);
   const qrDataUri = `data:image/png;base64,${qrPng.toString("base64")}`;
 
-  const nombreInstitucion = escapeXml(
-    (institucion.nombre || "Institución Educativa").toUpperCase()
-  );
-  const procesoElectoral = escapeXml(institucion.proceso_electoral || "Proceso Electoral");
+  // Header text: the institution name (and process name) can be long, so wrap
+  // them onto several lines and shrink the font until everything fits inside
+  // the header, next to the logo when there is one.
   const textX = logoDataUri ? 46 * SCALE : cx;
   const anchor = logoDataUri ? "start" : "middle";
+  const headerTextWidth = logoDataUri ? w - 46 * SCALE - 8 * SCALE : w - 16 * SCALE;
+
+  const nombreAjustado = fitText(
+    (institucion.nombre || "Institución Educativa").toUpperCase(),
+    headerTextWidth,
+    3,
+    9,
+    4.5,
+    0.72 // bold capitals are wide
+  );
+  const procesoAjustado = fitText(
+    institucion.proceso_electoral || "Proceso Electoral",
+    headerTextWidth,
+    2,
+    7,
+    4.5,
+    0.58
+  );
+
+  const nombreLineH = nombreAjustado.fontSize * 1.2;
+  const procesoLineH = procesoAjustado.fontSize * 1.2;
+  const bloqueAlto =
+    nombreAjustado.lines.length * nombreLineH + 3 + procesoAjustado.lines.length * procesoLineH;
+  let headerY = (HEADER_HEIGHT / SCALE - bloqueAlto) / 2;
+
+  const headerLineTag = (
+    line: string,
+    size: number,
+    baseline: number,
+    bold: boolean,
+    fill: string,
+    overflow: boolean,
+    factor: number
+  ) => {
+    const squeeze =
+      overflow && line.length * size * SCALE * factor > headerTextWidth
+        ? ` textLength="${headerTextWidth}" lengthAdjust="spacingAndGlyphs"`
+        : "";
+    return `<text x="${textX}" y="${baseline * SCALE}" font-family="Helvetica, Arial, sans-serif"${bold ? ' font-weight="700"' : ""} font-size="${size * SCALE}" fill="${fill}" text-anchor="${anchor}"${squeeze}>${escapeXml(line)}</text>`;
+  };
+
+  const headerTags: string[] = [];
+  for (const line of nombreAjustado.lines) {
+    headerTags.push(
+      headerLineTag(line, nombreAjustado.fontSize, headerY + nombreAjustado.fontSize * 0.95, true, "#ffffff", nombreAjustado.overflow, 0.72)
+    );
+    headerY += nombreLineH;
+  }
+  headerY += 3;
+  for (const line of procesoAjustado.lines) {
+    headerTags.push(
+      headerLineTag(line, procesoAjustado.fontSize, headerY + procesoAjustado.fontSize * 0.95, false, "#d9e6ff", procesoAjustado.overflow, 0.58)
+    );
+    headerY += procesoLineH;
+  }
 
   // SVG uses a top-left origin (y grows downward) — lay everything out
   // top-to-bottom in that order, unlike the PDF version's bottom-up math.
@@ -126,8 +226,7 @@ export async function generateCarnetJpg(
     <rect x="0" y="0" width="${w}" height="${HEADER_HEIGHT}" fill="#1e3a8a" />
     <rect x="0" y="${HEADER_HEIGHT}" width="${w}" height="${2 * SCALE}" fill="#0891b2" />
     ${logoTag}
-    <text x="${textX}" y="${26 * SCALE}" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="${8 * SCALE}" fill="#ffffff" text-anchor="${anchor}">${nombreInstitucion}</text>
-    <text x="${textX}" y="${40 * SCALE}" font-family="Helvetica, Arial, sans-serif" font-size="${7 * SCALE}" fill="#d9e6ff" text-anchor="${anchor}">${procesoElectoral}</text>
+    ${headerTags.join("\n    ")}
     <text x="${cx}" y="${labelY}" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="${7 * SCALE}" fill="#1e3a8a" text-anchor="middle">CREDENCIAL ELECTORAL</text>
     <image x="${qrX}" y="${qrY}" width="${qrSize}" height="${qrSize}" href="${qrDataUri}" />
     ${nombreTags}

@@ -37,10 +37,10 @@ export default function Carnet({
           <div className="h-8 w-8 shrink-0 rounded-full bg-white/15" />
         )}
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-semibold uppercase tracking-wide">
+          <p className="text-balance text-[11px] font-semibold uppercase leading-tight tracking-wide">
             {institucion.nombre || "Institución Educativa"}
           </p>
-          <p className="truncate text-[10px] text-blue-100">
+          <p className="mt-0.5 text-balance text-[10px] leading-tight text-blue-100">
             {institucion.proceso_electoral || "Proceso Electoral"}
           </p>
         </div>
