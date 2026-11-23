@@ -75,7 +75,7 @@ export default async function CertificadosPage() {
                 {m.cargo} de Mesa{m.mesa ? ` N° ${m.mesa}` : ""}
               </strong>{" "}
               en las <strong>{institucion.proceso_electoral || "Elecciones Escolares"}</strong>
-              {institucion.anio_escolar ? ` — Año ${institucion.anio_escolar}` : ""}.
+              .
             </p>
 
             <div className="mt-16 flex justify-center">
