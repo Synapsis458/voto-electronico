@@ -46,7 +46,6 @@ export default async function ResultadosPublicosPage() {
     { label: "Electores", value: r.electores },
     { label: "Votantes", value: r.votantes },
     { label: "Participación", value: `${r.participacion}%` },
-    { label: "Abstenciones", value: r.abstenciones },
   ];
 
   return (
@@ -107,7 +106,7 @@ export default async function ResultadosPublicosPage() {
             <div className="border-t border-slate-100 dark:border-slate-800" />
 
             <div className="px-6 py-6 sm:px-10">
-              <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="mb-6 grid grid-cols-3 gap-3">
                 {stats.map((s) => (
                   <div
                     key={s.label}

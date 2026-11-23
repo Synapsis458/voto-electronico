@@ -62,3 +62,14 @@ export type Voto = {
   hora: string;
   created_at: string;
 };
+
+// Result row of the "pick an elector" search used when registering candidates
+// and miembros de mesa. `bloqueado` (if set) is the reason it cannot be picked.
+export type ElectorOpcion = {
+  dni: string;
+  apellidos: string;
+  nombres: string;
+  grado: string;
+  seccion: string;
+  bloqueado?: string;
+};

@@ -5,34 +5,16 @@ import { requireAdmin } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { optionalFile, uploadImage } from "@/lib/storage";
 import { logAudit } from "@/lib/audit";
+import { buscarElectores } from "@/lib/electoresBusqueda";
+import type { ElectorOpcion } from "@/lib/types";
 
 export type CandidatoState = { error?: string; success?: boolean } | undefined;
-
-export type ElectorOpcion = {
-  dni: string;
-  apellidos: string;
-  nombres: string;
-  grado: string;
-  seccion: string;
-  yaEsCandidato: boolean;
-};
 
 // Search the electores table so a candidate can be picked from it.
 export async function buscarElectoresParaCandidato(q: string): Promise<ElectorOpcion[]> {
   await requireAdmin();
 
-  // Strip characters that would break the PostgREST `or` filter syntax.
-  const termino = q.replace(/[,()%*\\]/g, " ").trim();
-  if (termino.length < 2) return [];
-
-  const { data } = await supabaseAdmin
-    .from("electores")
-    .select("dni,apellidos,nombres,grado,seccion")
-    .or(`dni.ilike.%${termino}%,apellidos.ilike.%${termino}%,nombres.ilike.%${termino}%`)
-    .order("apellidos", { ascending: true })
-    .limit(8);
-
-  const electores = data ?? [];
+  const electores = await buscarElectores(q);
   if (electores.length === 0) return [];
 
   const { data: yaCandidatos } = await supabaseAdmin
@@ -44,7 +26,10 @@ export async function buscarElectoresParaCandidato(q: string): Promise<ElectorOp
     );
   const ocupados = new Set((yaCandidatos ?? []).map((c) => c.dni));
 
-  return electores.map((e) => ({ ...e, yaEsCandidato: ocupados.has(e.dni) }));
+  return electores.map((e) => ({
+    ...e,
+    bloqueado: ocupados.has(e.dni) ? "Ya es candidato" : undefined,
+  }));
 }
 
 export async function createCandidato(

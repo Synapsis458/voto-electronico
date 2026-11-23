@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { optionalFile, uploadImage } from "@/lib/storage";
 import { logAudit } from "@/lib/audit";
+import { buscarElectores } from "@/lib/electoresBusqueda";
+import type { ElectorOpcion } from "@/lib/types";
 
 export type InstitucionState = { error?: string; success?: boolean } | undefined;
 
@@ -63,6 +65,12 @@ export async function saveInstitucion(
 
 export type MiembroMesaState = { error?: string; success?: boolean } | undefined;
 
+// Search the electores table so a miembro de mesa can be picked from it.
+export async function buscarElectoresParaMesa(q: string): Promise<ElectorOpcion[]> {
+  await requireAdmin();
+  return buscarElectores(q);
+}
+
 export async function guardarMiembroMesa(
   _prevState: MiembroMesaState,
   formData: FormData
@@ -71,19 +79,29 @@ export async function guardarMiembroMesa(
 
   const mesa = String(formData.get("mesa") ?? "").trim();
   const cargo = String(formData.get("cargo") ?? "").trim();
-  const apellidos = String(formData.get("apellidos") ?? "").trim();
-  const nombres = String(formData.get("nombres") ?? "").trim();
   const dni = String(formData.get("dni") ?? "").trim();
 
   if (!["Presidente", "Secretario(a)", "Vocal"].includes(cargo)) {
     return { error: "Selecciona un cargo válido." };
   }
-  if (!apellidos || !nombres) {
-    return { error: "Apellidos y nombres son obligatorios." };
+  if (!/^\d{8}$/.test(dni)) {
+    return { error: "Selecciona un elector de la lista para asignarlo como miembro de mesa." };
   }
-  if (dni && !/^\d{8}$/.test(dni)) {
-    return { error: "El DNI debe tener 8 dígitos (o dejarse vacío)." };
+
+  // The member MUST exist in the electores database; names come from there,
+  // never from the submitted form.
+  const { data: elector } = await supabaseAdmin
+    .from("electores")
+    .select("apellidos,nombres")
+    .eq("dni", dni)
+    .maybeSingle();
+  if (!elector) {
+    return {
+      error:
+        "Ese DNI no está en la base de electores. Regístralo primero en la pestaña Electores.",
+    };
   }
+  const { apellidos, nombres } = elector;
 
   const { error } = await supabaseAdmin
     .from("miembros_mesa")

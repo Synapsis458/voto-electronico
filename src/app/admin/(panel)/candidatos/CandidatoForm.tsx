@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { createCandidato, updateCandidato } from "./actions";
-import ElectorPicker from "./ElectorPicker";
+import { buscarElectoresParaCandidato, createCandidato, updateCandidato } from "./actions";
+import ElectorPicker from "@/components/ElectorPicker";
 import type { Candidato } from "@/lib/types";
 
 const inputClass =
@@ -47,7 +47,7 @@ export default function CandidatoForm({ candidato }: { candidato?: Candidato }) 
           </div>
         </>
       ) : (
-        <ElectorPicker key={resetKey} />
+        <ElectorPicker key={resetKey} buscar={buscarElectoresParaCandidato} />
       )}
       <input
         name="agrupacion"

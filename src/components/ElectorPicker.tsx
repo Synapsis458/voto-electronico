@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Search, UserCheck, X } from "lucide-react";
-import { buscarElectoresParaCandidato, type ElectorOpcion } from "./actions";
+import type { ElectorOpcion } from "@/lib/types";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100";
@@ -10,7 +10,13 @@ const inputClass =
 // Candidates must come from the electores table: the admin searches the elector
 // by DNI / name and picks one. Only the DNI is submitted; the server reads the
 // names from the electores table itself.
-export default function ElectorPicker() {
+export default function ElectorPicker({
+  buscar,
+  placeholder = "Buscar elector por DNI, apellidos o nombres (obligatorio)",
+}: {
+  buscar: (q: string) => Promise<ElectorOpcion[]>;
+  placeholder?: string;
+}) {
   const [q, setQ] = useState("");
   const [resultados, setResultados] = useState<ElectorOpcion[]>([]);
   const [buscando, setBuscando] = useState(false);
@@ -22,7 +28,7 @@ export default function ElectorPicker() {
     let cancelado = false;
     const t = setTimeout(async () => {
       setBuscando(true);
-      const r = await buscarElectoresParaCandidato(termino);
+      const r = await buscar(termino);
       if (!cancelado) {
         setResultados(r);
         setBuscando(false);
@@ -32,7 +38,7 @@ export default function ElectorPicker() {
       cancelado = true;
       clearTimeout(t);
     };
-  }, [q]);
+  }, [q, buscar]);
 
   const visibles = q.trim().length >= 2 ? resultados : [];
 
@@ -75,7 +81,7 @@ export default function ElectorPicker() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar elector por DNI, apellidos o nombres (obligatorio)"
+          placeholder={placeholder}
           autoComplete="off"
           className={`${inputClass} pl-9`}
         />
@@ -95,7 +101,7 @@ export default function ElectorPicker() {
             <li key={e.dni}>
               <button
                 type="button"
-                disabled={e.yaEsCandidato}
+                disabled={Boolean(e.bloqueado)}
                 onClick={() => setElegido(e)}
                 className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-zinc-800"
               >
@@ -103,7 +109,7 @@ export default function ElectorPicker() {
                   {e.apellidos}, {e.nombres}
                 </span>
                 <span className="shrink-0 text-xs text-zinc-500">
-                  {e.yaEsCandidato ? "Ya es candidato · " : ""}
+                  {e.bloqueado ? `${e.bloqueado} · ` : ""}
                   {e.dni}
                 </span>
               </button>
