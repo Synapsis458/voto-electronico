@@ -80,14 +80,9 @@ export default async function CertificadosPage() {
 
             <div className="mt-16 flex justify-center">
               <div className="text-center text-xs">
-                <div className="w-56 border-t border-zinc-900 pt-1 print:border-black">
-                  {institucion.director || "Firma del Director/a"}
+                <div className="min-h-[1.25rem] w-56 border-t border-zinc-900 pt-1 print:border-black">
+                  {institucion.director}
                 </div>
-                <p className="mt-0.5 text-zinc-500 print:text-black">
-                  Firma del Director/a
-                  <br />
-                  (Nombres y apellidos)
-                </p>
               </div>
             </div>
           </div>
