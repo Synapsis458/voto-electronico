@@ -5,6 +5,7 @@ import { getInstitucion, formatearFechaProceso } from "@/lib/institucion";
 import type { Elector } from "@/lib/types";
 import Carnet from "./Carnet";
 import DescargarTodos from "./DescargarTodos";
+import DescargarPdf from "./DescargarPdf";
 
 export default async function CarnetsPage({
   searchParams,
@@ -61,11 +62,15 @@ export default async function CarnetsPage({
           </h1>
           <p className="text-sm text-zinc-500">
             El código QR de cada carnet representa únicamente el DNI del
-            elector. Descarga uno individual en JPG o todos juntos en un ZIP
-            de imágenes JPG.
+            elector. Descarga uno individual en JPG, todos juntos en un ZIP de
+            imágenes JPG, o genera un PDF en hojas A4 con 9 carnets por hoja
+            listo para imprimir y recortar.
           </p>
         </div>
-        <DescargarTodos filtro={filtroQuery} />
+        <div className="flex flex-wrap items-start justify-end gap-3">
+          <DescargarPdf filtro={filtroQuery} />
+          <DescargarTodos filtro={filtroQuery} />
+        </div>
       </div>
 
       <form className="mb-6 flex flex-wrap gap-2" method="get">
