@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { getInstitucion, formatearFechaProceso } from "@/lib/institucion";
 import type { Elector } from "@/lib/types";
 import Carnet from "./Carnet";
+import DescargarTodos from "./DescargarTodos";
 
 export default async function CarnetsPage({
   searchParams,
@@ -49,7 +50,7 @@ export default async function CarnetsPage({
   if (grado) downloadParams.set("grado", grado);
   if (seccion) downloadParams.set("seccion", seccion);
   if (mesa) downloadParams.set("mesa", mesa);
-  const downloadHref = `/admin/carnets/download${downloadParams.size ? `?${downloadParams}` : ""}`;
+  const filtroQuery = downloadParams.size ? `?${downloadParams}` : "";
 
   return (
     <div>
@@ -64,12 +65,7 @@ export default async function CarnetsPage({
             de imágenes JPG.
           </p>
         </div>
-        <a
-          href={downloadHref}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900"
-        >
-          Descargar todos (ZIP de JPG)
-        </a>
+        <DescargarTodos filtro={filtroQuery} />
       </div>
 
       <form className="mb-6 flex flex-wrap gap-2" method="get">
