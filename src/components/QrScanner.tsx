@@ -38,25 +38,44 @@ export default function QrScanner({
     async function startScanning() {
       setError(null);
       try {
-        let cameraId: string | MediaTrackConstraints = { facingMode: "environment" };
-        try {
-          const cameras = await Html5Qrcode.getCameras();
-          if (cameras.length > 0) cameraId = cameras[0].id;
-        } catch {
-          // No enumerable cameras yet (permission not granted) — fall back
-          // to the constraint-based selector below.
+        const config = { fps: 10, qrbox: 260 };
+        const onScan = (decodedText: string) => {
+          onDetected(decodedText.trim());
+        };
+
+        // 1) Preferimos SIEMPRE la cámara posterior ("environment") del
+        //    celular o tablet. "exact" obliga a usarla; si el dispositivo no
+        //    la puede garantizar, probamos sin "exact".
+        const intentos: MediaTrackConstraints[] = [
+          { facingMode: { exact: "environment" } },
+          { facingMode: "environment" },
+        ];
+
+        let iniciado = false;
+        for (const constraints of intentos) {
+          if (cancelled) return;
+          try {
+            await scanner.start(constraints, config, onScan, undefined);
+            iniciado = true;
+            break;
+          } catch {
+            // Probar el siguiente intento.
+          }
         }
 
-        if (cancelled) return;
-
-        await scanner.start(
-          cameraId,
-          { fps: 10, qrbox: 260 },
-          (decodedText) => {
-            onDetected(decodedText.trim());
-          },
-          undefined
-        );
+        // 2) Respaldo: listar cámaras y elegir la que parezca posterior
+        //    (por su nombre); si no se reconoce ninguna, usar la última
+        //    de la lista (en móviles la frontal suele ir primero).
+        if (!iniciado && !cancelled) {
+          const cameras = await Html5Qrcode.getCameras();
+          if (cameras.length === 0) throw new Error("sin cámaras");
+          const trasera =
+            cameras.find((c) =>
+              /back|rear|trasera|posterior|environment|world/i.test(c.label)
+            ) ?? cameras[cameras.length - 1];
+          if (cancelled) return;
+          await scanner.start(trasera.id, config, onScan, undefined);
+        }
       } catch {
         if (!cancelled) {
           setError(
