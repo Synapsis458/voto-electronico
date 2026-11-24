@@ -20,7 +20,14 @@ async function pedirJpg(id: string): Promise<Blob> {
       const res = await fetch(`/admin/carnets/${id}/download`, { cache: "no-store" });
       const tipo = res.headers.get("content-type") ?? "";
       if (res.ok && tipo.startsWith("image/")) return await res.blob();
-      ultimoError = new Error(`HTTP ${res.status}`);
+      let motivo = `HTTP ${res.status}`;
+      if (tipo.includes("json")) {
+        const cuerpo = (await res.json().catch(() => null)) as { error?: string } | null;
+        if (cuerpo?.error) motivo = `${motivo}: ${cuerpo.error}`;
+      } else if (res.redirected || tipo.includes("html")) {
+        motivo = `${motivo} (la sesión expiró o la página está desactualizada; recarga con Ctrl+F5 e inicia sesión)`;
+      }
+      ultimoError = new Error(motivo);
     } catch (e) {
       ultimoError = e;
     }
@@ -48,6 +55,7 @@ export default function DescargarTodos({ filtro }: { filtro: string }) {
       const zip = new JSZip();
       let hechos = 0;
       let fallidos = 0;
+      let primerFallo = "";
       let siguiente = 0;
       setEstado({ fase: "descargando", hechos: 0, total: electores.length });
 
@@ -56,8 +64,9 @@ export default function DescargarTodos({ filtro }: { filtro: string }) {
           const e = electores[siguiente++];
           try {
             zip.file(`carnet-${e.dni}.jpg`, await pedirJpg(e.id));
-          } catch {
+          } catch (err) {
             fallidos++;
+            if (!primerFallo) primerFallo = err instanceof Error ? err.message : String(err);
           }
           hechos++;
           setEstado({ fase: "descargando", hechos, total: electores.length });
@@ -66,7 +75,7 @@ export default function DescargarTodos({ filtro }: { filtro: string }) {
       await Promise.all(Array.from({ length: SIMULTANEAS }, trabajador));
 
       if (fallidos === electores.length) {
-        throw new Error("No se pudo generar ningún carnet. Vuelve a iniciar sesión e inténtalo de nuevo.");
+        throw new Error(`No se pudo generar ningún carnet. Causa: ${primerFallo}`);
       }
 
       setEstado({ fase: "comprimiendo" });
