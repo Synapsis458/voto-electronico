@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/supabase/auth";
 import { getInstitucion } from "@/lib/institucion";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { ordenarMiembros } from "@/lib/types";
 import type { MiembroMesa } from "@/lib/types";
 import InstitucionForm from "./InstitucionForm";
 import MiembrosMesaForm from "./MiembrosMesaForm";
@@ -10,12 +11,8 @@ export default async function InstitucionPage() {
   await requireAdmin();
   const institucion = await getInstitucion();
 
-  const { data } = await supabaseAdmin
-    .from("miembros_mesa")
-    .select("*")
-    .order("mesa", { ascending: true })
-    .order("cargo", { ascending: true });
-  const miembros = (data ?? []) as MiembroMesa[];
+  const { data } = await supabaseAdmin.from("miembros_mesa").select("*");
+  const miembros = ordenarMiembros((data ?? []) as MiembroMesa[]);
 
   return (
     <div>
@@ -32,9 +29,11 @@ export default async function InstitucionPage() {
         Miembros de mesa
       </h2>
       <p className="mb-4 text-sm text-zinc-500">
-        Presidente, Secretario(a) y Vocal se incorporan automáticamente en el
-        Acta Electoral. Deja el campo &ldquo;Mesa&rdquo; vacío si tu proceso
-        tiene una sola mesa de sufragio.
+        Presidente, Secretario(a) y Vocal, más un suplente para cada uno (1er
+        Suplente del Presidente, 2do Suplente del Secretario(a) y 3er Suplente
+        del Vocal), se incorporan automáticamente en el Acta Electoral y los
+        certificados. Todos se eligen de la base de electores. Deja el campo
+        &ldquo;Mesa&rdquo; vacío si tu proceso tiene una sola mesa de sufragio.
       </p>
 
       <MiembrosMesaForm />

@@ -3,10 +3,9 @@ import { requireAdmin } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getInstitucion, formatearFechaProceso, formatearHora } from "@/lib/institucion";
 import { getResultados } from "@/lib/resultados";
+import { CARGOS_SUPLENTES, CARGOS_TITULARES } from "@/lib/types";
 import type { CargoMesa, MiembroMesa } from "@/lib/types";
 import PrintButton from "../../resultados/PrintButton";
-
-const CARGOS: CargoMesa[] = ["Presidente", "Secretario(a)", "Vocal"];
 
 const linea = "inline-block min-w-[7rem] border-b border-zinc-900 print:border-black";
 const casilla =
@@ -43,6 +42,26 @@ export default async function ActaElectoralPage({
     const mesasDistintas = new Set(candidatos.map((m) => m.mesa));
     if (mesasDistintas.size === 1) return candidatos[0];
     return candidatos.find((m) => m.mesa === "");
+  }
+
+  function bloqueFirma(cargo: CargoMesa, separacion: string) {
+    const miembro = resolverMiembro(cargo);
+    return (
+      <div key={cargo} className="flex flex-col">
+        <p className={`${separacion} font-semibold uppercase`}>{cargo}</p>
+        <div className="border-t border-zinc-900 pt-1 print:border-black">
+          {miembro ? `${miembro.nombres} ${miembro.apellidos}` : "Nombres y apellidos"}
+        </div>
+        <p className="mt-3 text-left">
+          DNI:{" "}
+          {miembro?.dni ? (
+            <span className="font-semibold">{miembro.dni}</span>
+          ) : (
+            <span className={linea}>&nbsp;</span>
+          )}
+        </p>
+      </div>
+    );
   }
 
   const fecha = institucion.fecha_proceso
@@ -206,25 +225,12 @@ export default async function ActaElectoralPage({
         {/* Firmas de la mesa — misma grilla de 3 columnas que Personeros, para que
             ambos bloques queden alineados verticalmente en la página. */}
         <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-10 text-center text-sm sm:grid-cols-3">
-          {CARGOS.map((cargo) => {
-            const miembro = resolverMiembro(cargo);
-            return (
-              <div key={cargo} className="flex flex-col">
-                <p className="mb-10 font-semibold uppercase">{cargo}</p>
-                <div className="border-t border-zinc-900 pt-1 print:border-black">
-                  {miembro ? `${miembro.nombres} ${miembro.apellidos}` : "Nombres y apellidos"}
-                </div>
-                <p className="mt-3 text-left">
-                  DNI:{" "}
-                  {miembro?.dni ? (
-                    <span className="font-semibold">{miembro.dni}</span>
-                  ) : (
-                    <span className={linea}>&nbsp;</span>
-                  )}
-                </p>
-              </div>
-            );
-          })}
+          {CARGOS_TITULARES.map((cargo) => bloqueFirma(cargo, "mb-10"))}
+        </div>
+
+        {/* Suplentes: 1er (del Presidente), 2do (del Secretario/a), 3er (del Vocal). */}
+        <div className="mt-8 grid grid-cols-1 gap-x-6 gap-y-8 text-center text-xs sm:grid-cols-3">
+          {CARGOS_SUPLENTES.map((cargo) => bloqueFirma(cargo, "mb-8"))}
         </div>
 
         {/* Personeros — una columna por cada agrupación registrada, envolviendo

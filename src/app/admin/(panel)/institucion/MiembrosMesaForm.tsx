@@ -2,12 +2,11 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import ElectorPicker from "@/components/ElectorPicker";
+import { CARGOS_SUPLENTES, CARGOS_TITULARES } from "@/lib/types";
 import { buscarElectoresParaMesa, guardarMiembroMesa } from "./actions";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-100";
-
-const CARGOS = ["Presidente", "Secretario(a)", "Vocal"] as const;
 
 export default function MiembrosMesaForm() {
   const [state, action, pending] = useActionState(guardarMiembroMesa, undefined);
@@ -41,11 +40,20 @@ export default function MiembrosMesaForm() {
         <option value="" disabled>
           Cargo
         </option>
-        {CARGOS.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
+        <optgroup label="Titulares">
+          {CARGOS_TITULARES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label="Suplentes">
+          {CARGOS_SUPLENTES.map((c, i) => (
+            <option key={c} value={c}>
+              {c} (de {CARGOS_TITULARES[i]})
+            </option>
+          ))}
+        </optgroup>
       </select>
       <input
         name="mesa"

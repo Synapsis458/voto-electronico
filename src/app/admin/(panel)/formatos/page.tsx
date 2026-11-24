@@ -18,7 +18,7 @@ const FORMATOS = [
   {
     href: "/admin/formatos/certificados",
     label: "Certificados de miembros de mesa",
-    desc: "Uno por cada Presidente/Secretario(a)/Vocal registrado, con su mesa asignada.",
+    desc: "Uno por cada Presidente/Secretario(a)/Vocal y suplente registrado, con su mesa asignada.",
   },
 ];
 

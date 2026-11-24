@@ -119,7 +119,10 @@ create index if not exists auditoria_created_at_idx on auditoria (created_at des
 create table if not exists miembros_mesa (
   id uuid primary key default gen_random_uuid(),
   mesa text not null default '',
-  cargo text not null check (cargo in ('Presidente', 'Secretario(a)', 'Vocal')),
+  cargo text not null check (cargo in (
+    'Presidente', 'Secretario(a)', 'Vocal',
+    '1er Suplente', '2do Suplente', '3er Suplente'
+  )),
   apellidos text not null,
   nombres text not null,
   dni text not null default '' check (dni = '' or dni ~ '^[0-9]{8}$'),

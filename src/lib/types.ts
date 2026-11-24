@@ -38,7 +38,14 @@ export type Candidato = {
   created_at: string;
 };
 
-export type CargoMesa = "Presidente" | "Secretario(a)" | "Vocal";
+// Titulares y sus suplentes: 1er Suplente (del Presidente), 2do Suplente
+// (del Secretario/a) y 3er Suplente (del Vocal). El orden de este arreglo es
+// el orden en que se muestran en listas y certificados.
+export const CARGOS_TITULARES = ["Presidente", "Secretario(a)", "Vocal"] as const;
+export const CARGOS_SUPLENTES = ["1er Suplente", "2do Suplente", "3er Suplente"] as const;
+export const CARGOS_MESA = [...CARGOS_TITULARES, ...CARGOS_SUPLENTES] as const;
+
+export type CargoMesa = (typeof CARGOS_MESA)[number];
 
 export type MiembroMesa = {
   id: string;
@@ -49,6 +56,15 @@ export type MiembroMesa = {
   dni: string;
   created_at: string;
 };
+
+// Ordena por mesa y luego por cargo (titulares primero, después suplentes).
+export function ordenarMiembros(miembros: MiembroMesa[]): MiembroMesa[] {
+  return [...miembros].sort(
+    (a, b) =>
+      a.mesa.localeCompare(b.mesa, "es", { numeric: true }) ||
+      CARGOS_MESA.indexOf(a.cargo) - CARGOS_MESA.indexOf(b.cargo)
+  );
+}
 
 export type TipoVoto = "candidato" | "blanco";
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/supabase/auth";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { getInstitucion } from "@/lib/institucion";
+import { ordenarMiembros } from "@/lib/types";
 import type { MiembroMesa } from "@/lib/types";
 import PrintButton from "../../resultados/PrintButton";
 
@@ -9,12 +10,8 @@ export default async function CertificadosPage() {
   await requireAdmin();
   const institucion = await getInstitucion();
 
-  const { data } = await supabaseAdmin
-    .from("miembros_mesa")
-    .select("*")
-    .order("mesa", { ascending: true })
-    .order("cargo", { ascending: true });
-  const miembros = (data ?? []) as MiembroMesa[];
+  const { data } = await supabaseAdmin.from("miembros_mesa").select("*");
+  const miembros = ordenarMiembros((data ?? []) as MiembroMesa[]);
 
   return (
     <div>

@@ -6,6 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { optionalFile, uploadImage } from "@/lib/storage";
 import { logAudit } from "@/lib/audit";
 import { buscarElectores } from "@/lib/electoresBusqueda";
+import { CARGOS_MESA } from "@/lib/types";
 import type { ElectorOpcion } from "@/lib/types";
 
 export type InstitucionState = { error?: string; success?: boolean } | undefined;
@@ -81,7 +82,7 @@ export async function guardarMiembroMesa(
   const cargo = String(formData.get("cargo") ?? "").trim();
   const dni = String(formData.get("dni") ?? "").trim();
 
-  if (!["Presidente", "Secretario(a)", "Vocal"].includes(cargo)) {
+  if (!(CARGOS_MESA as readonly string[]).includes(cargo)) {
     return { error: "Selecciona un cargo válido." };
   }
   if (!/^\d{8}$/.test(dni)) {
@@ -103,12 +104,31 @@ export async function guardarMiembroMesa(
   }
   const { apellidos, nombres } = elector;
 
+  // Una misma persona no puede ocupar dos cargos en la misma mesa
+  // (titular y suplente, por ejemplo).
+  const { data: repetido } = await supabaseAdmin
+    .from("miembros_mesa")
+    .select("cargo")
+    .eq("mesa", mesa)
+    .eq("dni", dni)
+    .neq("cargo", cargo)
+    .limit(1)
+    .maybeSingle();
+  if (repetido) {
+    return {
+      error: `Ese elector ya está registrado como ${repetido.cargo} en esta mesa. Elige a otra persona.`,
+    };
+  }
+
   const { error } = await supabaseAdmin
     .from("miembros_mesa")
     .upsert({ mesa, cargo, apellidos, nombres, dni }, { onConflict: "mesa,cargo" });
 
   if (error) {
-    return { error: "No se pudo guardar el miembro de mesa." };
+    return {
+      error:
+        "No se pudo guardar el miembro de mesa. Si es un suplente, verifica que ya ejecutaste la actualización SQL de la base de datos.",
+    };
   }
 
   await logAudit(
@@ -118,6 +138,7 @@ export async function guardarMiembroMesa(
   );
   revalidatePath("/admin/institucion");
   revalidatePath("/admin/formatos/acta-electoral");
+  revalidatePath("/admin/formatos/certificados");
   return { success: true };
 }
 
